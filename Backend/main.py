@@ -3,6 +3,8 @@ from sqlalchemy.orm import Session
 from database import engine, Base, SessionLocal
 from models import Movimiento
 from schemas import MovimientoCreate
+from models import User
+from schemas import UserCreate, UserLogin
 app = FastAPI()
 
 Base.metadata.create_all(bind=engine)
@@ -22,7 +24,8 @@ def crear_movimiento(movimiento: MovimientoCreate, db: Session = Depends(get_db)
     nuevo = Movimiento(
         tipo=movimiento.tipo,
         monto=movimiento.monto,
-        descripcion=movimiento.descripcion
+        descripcion=movimiento.descripcion,
+        user_id=movimiento.user_id
     )
     db.add(nuevo)
     db.commit()
@@ -30,10 +33,9 @@ def crear_movimiento(movimiento: MovimientoCreate, db: Session = Depends(get_db)
     return nuevo
 
 
-@app.get("/movimientos")
-def obtener_movimientos(db: Session = Depends(get_db)):
-    return db.query(Movimiento).all()
-
+@app.get("/movimientos/{user_id}")
+def obtener_movimientos(user_id: int, db: Session = Depends(get_db)):
+    return db.query(Movimiento).filter(Movimiento.user_id == user_id).all()
 @app.get("/resumen")
 def resumen(db: Session = Depends(get_db)):
     movimientos = db.query(Movimiento).all()
@@ -86,3 +88,23 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+@app.post("/register")
+def register(user: UserCreate, db: Session = Depends(get_db)):
+    nuevo_usuario = User(
+        nombre=user.nombre,
+        email=user.email,
+        password=user.password
+    )
+    db.add(nuevo_usuario)
+    db.commit()
+    db.refresh(nuevo_usuario)
+    return nuevo_usuario
+
+@app.post("/login")
+def login(user: UserLogin, db: Session = Depends(get_db)):
+    usuario = db.query(User).filter(User.email == user.email).first()
+
+    if not usuario or usuario.password != user.password:
+        return {"error": "Credenciales incorrectas"}
+
+    return {"mensaje": "Login exitoso", "user_id": usuario.id}
