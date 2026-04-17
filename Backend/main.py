@@ -10,10 +10,22 @@ from schemas import (
 import datetime
 
 from fastapi.middleware.cors import CORSMiddleware
+from passlib.context import CryptContext
+
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def hash_password(password: str):
+    return pwd_context.hash(password)
+
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
+
 
 app = FastAPI()
 
 Base.metadata.create_all(bind=engine)
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -39,11 +51,17 @@ def home():
 
 @app.post("/register", response_model=UserResponse)
 def register(user: UserCreate, db: Session = Depends(get_db)):
+
+    existe = db.query(User).filter(User.email == user.email).first()
+    if existe:
+        return {"error": "El email ya está registrado"}
+
     nuevo_usuario = User(
         nombre=user.nombre,
         email=user.email,
-        password=user.password
+        password=hash_password(user.password) 
     )
+
     db.add(nuevo_usuario)
     db.commit()
     db.refresh(nuevo_usuario)
@@ -54,7 +72,7 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
 def login(user: UserLogin, db: Session = Depends(get_db)):
     usuario = db.query(User).filter(User.email == user.email).first()
 
-    if not usuario or usuario.password != user.password:
+    if not usuario or not verify_password(user.password, usuario.password):
         return {"error": "Credenciales incorrectas"}
 
     return {"mensaje": "Login exitoso", "user_id": usuario.id}
@@ -75,7 +93,7 @@ def crear_movimiento(movimiento: MovimientoCreate, db: Session = Depends(get_db)
 
     db.add(nuevo)
 
-    # 🔥 ACTUALIZAR CAJA
+    
     hoy = datetime.date.today()
 
     caja = db.query(CajaDiaria).filter(
@@ -133,6 +151,7 @@ def eliminar_movimiento(id: int, db: Session = Depends(get_db)):
 
     return {"mensaje": "Eliminado"}
 
+
 @app.get("/resumen/{user_id}")
 def resumen(user_id: int, db: Session = Depends(get_db)):
     movimientos = db.query(Movimiento).filter(Movimiento.user_id == user_id).all()
@@ -149,10 +168,22 @@ def resumen(user_id: int, db: Session = Depends(get_db)):
 
 @app.post("/caja/iniciar", response_model=CajaResponse)
 def iniciar_caja(data: CajaCreate, db: Session = Depends(get_db)):
+
+    hoy = datetime.date.today()
+
+    caja_existente = db.query(CajaDiaria).filter(
+        CajaDiaria.user_id == data.user_id,
+        CajaDiaria.fecha == hoy
+    ).first()
+
+    if caja_existente:
+        return {"error": "Ya existe una caja iniciada hoy"}
+
     caja = CajaDiaria(
         capital_inicial=data.capital_inicial,
         user_id=data.user_id
     )
+
     db.add(caja)
     db.commit()
     db.refresh(caja)
@@ -169,7 +200,6 @@ def obtener_caja(user_id: int, db: Session = Depends(get_db)):
     ).first()
 
     return caja
-
 
 @app.post("/caja/cerrar/{caja_id}")
 def cerrar_caja(caja_id: int, data: CierreCaja, db: Session = Depends(get_db)):
