@@ -38,8 +38,13 @@ export default function AppShell() {
               <h1 className="mt-1 text-xl font-semibold leading-tight text-ink">{company}</h1>
             </div>
           </div>
-          <button className="rounded-2xl border border-white/70 bg-white/50 p-2 text-muted lg:hidden" onClick={logout} aria-label="Salir">
+          <button
+            className="flex items-center gap-2 rounded-2xl border border-white/70 bg-white/50 px-3 py-2 text-sm font-semibold text-muted lg:hidden"
+            onClick={logout}
+            aria-label="Cerrar sesion"
+          >
             <LogOut size={18} />
+            Cerrar sesion
           </button>
         </div>
 
@@ -75,7 +80,7 @@ export default function AppShell() {
           className="mt-7 hidden w-full items-center justify-center gap-2 rounded-2xl border border-white/70 bg-white/56 px-3 py-3 text-sm font-semibold text-ink/70 transition hover:-translate-y-0.5 hover:bg-white lg:flex"
         >
           <LogOut size={16} />
-          Salir
+          Cerrar sesion
         </button>
       </aside>
 
