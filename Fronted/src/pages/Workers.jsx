@@ -1,4 +1,4 @@
-import { Copy, Plus, Send, Users } from "lucide-react"
+import { Copy, Plus, RefreshCw, Send, Trash2, Users } from "lucide-react"
 import { useState } from "react"
 import { api } from "../api"
 import DataTable from "../components/DataTable"
@@ -40,6 +40,26 @@ export default function Workers() {
     const text = `Hola ${row.name}. Entra al bot de SmartConta:\n${BOT_LINK}\n\nLuego escribe:\n/start ${row.invite_code}\n\nDespues podras reportar ventas, gastos y vouchers por Telegram.`
     await navigator.clipboard.writeText(text)
     setMessage("Mensaje de invitacion copiado.")
+  }
+
+  async function resetWorker(row) {
+    try {
+      const { data: worker } = await api.post(`/workers/${row.id}/reactivate`)
+      await reload()
+      setMessage(`Conexion reiniciada. Nuevo codigo para ${worker.name}: ${worker.invite_code}`)
+    } catch (err) {
+      setMessage(err.response?.data?.detail || "No se pudo reiniciar la conexion.")
+    }
+  }
+
+  async function disableWorker(row) {
+    try {
+      await api.delete(`/workers/${row.id}`)
+      await reload()
+      setMessage(`${row.name} fue desactivado.`)
+    } catch (err) {
+      setMessage(err.response?.data?.detail || "No se pudo desactivar el trabajador.")
+    }
   }
 
   return (
@@ -107,6 +127,29 @@ export default function Workers() {
                 {row.invite_code}
                 <Copy size={13} className="text-muted" />
               </button>
+            ),
+          },
+          {
+            key: "actions",
+            label: "Acciones",
+            render: (row) => (
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => resetWorker(row)}
+                  className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 text-xs font-semibold text-ink shadow-sm transition hover:-translate-y-0.5 hover:bg-brand disabled:opacity-50"
+                >
+                  <RefreshCw size={13} className="text-muted" />
+                  Reiniciar
+                </button>
+                <button
+                  onClick={() => disableWorker(row)}
+                  className="inline-flex items-center gap-2 rounded-full border border-[#f0dbe1] bg-[#fff6f8] px-3 py-1 text-xs font-semibold text-[#9a6675] shadow-sm transition hover:-translate-y-0.5 disabled:opacity-50"
+                  disabled={row.status === "disabled"}
+                >
+                  <Trash2 size={13} />
+                  Desactivar
+                </button>
+              </div>
             ),
           },
         ]}
