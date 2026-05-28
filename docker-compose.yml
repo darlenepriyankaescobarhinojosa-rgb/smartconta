@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: smartconta_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Molly
+      POSTGRES_DB: smartconta
+    ports:
+      - "5433:5432"
+    volumes:
+      - smartconta_pgdata:/var/lib/postgresql/data
+      - ./Backend/sql/schema.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d smartconta"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  smartconta_pgdata:
+

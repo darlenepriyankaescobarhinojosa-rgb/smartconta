@@ -1,0 +1,2 @@
+"""SmartConta backend package."""
+
