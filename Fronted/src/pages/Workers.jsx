@@ -8,7 +8,7 @@ import StatusBadge from "../components/StatusBadge"
 import { useApiResource } from "../hooks/useApiResource"
 
 const fallback = []
-const BOT_LINK = import.meta.env.VITE_TELEGRAM_BOT_LINK || "https://t.me/TU_BOT"
+const BOT_LINK = import.meta.env.VITE_TELEGRAM_BOT_LINK || "https://t.me/smartconta_empresa_bot"
 
 export default function Workers() {
   const { data, error, reload } = useApiResource("/workers", fallback)
