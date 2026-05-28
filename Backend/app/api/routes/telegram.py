@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
+from telegram import Bot
 
 from app.api.deps import get_db
+from app.core.config import settings
 from app.models import Movement, Voucher, Worker, WorkerStatus
 from app.schemas import TelegramMessage
 from app.services.ai_extractor import extract_business_event
@@ -14,7 +16,9 @@ router = APIRouter(prefix="/telegram", tags=["telegram"])
 async def telegram_webhook(request: Request, db: Session = Depends(get_db)):
     payload = await request.json()
     normalized = _normalize_telegram_update(payload)
-    return process_telegram_message(normalized, db)
+    result = process_telegram_message(normalized, db)
+    await _send_telegram_reply(payload, result.get("reply"))
+    return {"ok": True}
 
 
 @router.post("/simulate")
@@ -94,6 +98,19 @@ def _normalize_telegram_update(update: dict) -> TelegramMessage:
     if photos:
         photo_url = photos[-1].get("file_id")
     return TelegramMessage(telegram_user_id=user_id, text=text, photo_url=photo_url, invite_code=invite_code)
+
+
+async def _send_telegram_reply(update: dict, reply: str | None) -> None:
+    if not reply or not settings.telegram_bot_token:
+        return
+
+    message = update.get("message") or update.get("edited_message") or {}
+    chat_id = (message.get("chat") or {}).get("id")
+    if not chat_id:
+        return
+
+    bot = Bot(token=settings.telegram_bot_token)
+    await bot.send_message(chat_id=chat_id, text=reply)
 
 
 def _company_context(worker: Worker) -> dict:
