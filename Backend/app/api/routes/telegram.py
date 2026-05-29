@@ -16,8 +16,19 @@ router = APIRouter(prefix="/telegram", tags=["telegram"])
 async def telegram_webhook(request: Request, db: Session = Depends(get_db)):
     payload = await request.json()
     normalized = _normalize_telegram_update(payload)
-    result = process_telegram_message(normalized, db)
-    await _send_telegram_reply(payload, result.get("reply"))
+    if not normalized.telegram_user_id:
+        return {"ok": True, "ignored": True}
+
+    try:
+        result = process_telegram_message(normalized, db)
+        await _send_telegram_reply(payload, result.get("reply"))
+    except HTTPException as exc:
+        db.rollback()
+        await _send_telegram_reply(payload, str(exc.detail))
+    except Exception:
+        db.rollback()
+        await _send_telegram_reply(payload, "No pude procesar el mensaje. Intenta de nuevo o pide un codigo nuevo.")
+
     return {"ok": True}
 
 
@@ -27,12 +38,15 @@ def simulate_telegram_message(payload: TelegramMessage, db: Session = Depends(ge
 
 
 def process_telegram_message(payload: TelegramMessage, db: Session):
-    worker = db.query(Worker).filter(Worker.telegram_user_id == payload.telegram_user_id).first()
     is_start_command = bool(payload.text and payload.text.strip().lower().startswith("/start"))
 
-    if not worker and payload.invite_code:
+    if is_start_command and payload.invite_code:
         worker = db.query(Worker).filter(Worker.invite_code == payload.invite_code).first()
         if worker:
+            db.query(Worker).filter(
+                Worker.telegram_user_id == payload.telegram_user_id,
+                Worker.id != worker.id,
+            ).update({"telegram_user_id": None}, synchronize_session=False)
             worker.telegram_user_id = payload.telegram_user_id
             worker.status = WorkerStatus.active
             db.commit()
@@ -43,9 +57,15 @@ def process_telegram_message(payload: TelegramMessage, db: Session):
                 ),
                 "worker_id": worker.id,
             }
+        raise HTTPException(status_code=404, detail="Codigo de invitacion invalido o vencido. Pide uno nuevo.")
+
+    worker = db.query(Worker).filter(Worker.telegram_user_id == payload.telegram_user_id).first()
 
     if not worker:
         raise HTTPException(status_code=404, detail="Trabajador no asociado. Envia tu codigo de invitacion.")
+
+    if worker.status == WorkerStatus.disabled:
+        raise HTTPException(status_code=403, detail="Este trabajador esta desactivado. Pide al administrador un codigo nuevo.")
 
     if is_start_command:
         return {
@@ -110,7 +130,10 @@ async def _send_telegram_reply(update: dict, reply: str | None) -> None:
         return
 
     bot = Bot(token=settings.telegram_bot_token)
-    await bot.send_message(chat_id=chat_id, text=reply)
+    try:
+        await bot.send_message(chat_id=chat_id, text=reply)
+    except Exception:
+        return
 
 
 def _company_context(worker: Worker) -> dict:
