@@ -1,16 +1,16 @@
-from datetime import date
-
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db
-from app.models import Product, ProductPriceHistory, StockMovement, StockMovementType, User
+from app.models import Product, ProductPriceHistory, StockMovement, User
 from app.schemas import (
     ProductPriceHistoryCreate,
     ProductPriceHistoryOut,
     StockMovementCreate,
     StockMovementOut,
 )
+from app.services.price_service import record_product_price
+from app.services.stock_service import apply_stock_movement
 
 router = APIRouter(prefix="/inventory", tags=["inventory"])
 
@@ -36,34 +36,18 @@ def create_stock_movement(
     if not product:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
 
-    previous = product.stock
-    if payload.new_stock is not None:
-        new_stock = payload.new_stock
-        quantity = new_stock - previous
-    elif payload.type == StockMovementType.sale:
-        quantity = -abs(payload.quantity)
-        new_stock = previous + quantity
-    else:
-        quantity = payload.quantity
-        new_stock = previous + quantity
-
-    product.stock = new_stock
-    movement = StockMovement(
-        company_id=user.company_id,
-        product_id=product.id,
-        type=payload.type,
-        previous_stock=previous,
-        new_stock=new_stock,
-        quantity=quantity,
-        unit=product.unit,
+    return apply_stock_movement(
+        db,
+        product,
+        payload.type,
+        payload.quantity,
+        new_stock=payload.new_stock,
         reason=payload.reason,
-        occurred_on=payload.occurred_on or date.today(),
+        occurred_on=payload.occurred_on,
         source="web",
+        allow_negative=True,
+        allow_negative_quantity=True,
     )
-    db.add(movement)
-    db.commit()
-    db.refresh(movement)
-    return movement
 
 
 @router.get("/price-history", response_model=list[ProductPriceHistoryOut])
@@ -83,19 +67,13 @@ def create_price_history(
     product = db.query(Product).filter(Product.id == payload.product_id, Product.company_id == user.company_id).first()
     if not product:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
-    product.cost = payload.cost
-    product.price = payload.price
-    row = ProductPriceHistory(
-        company_id=user.company_id,
-        product_id=product.id,
-        cost=payload.cost,
+    return record_product_price(
+        db,
+        product,
+        unit_cost=payload.cost,
         price=payload.price,
-        occurred_on=payload.occurred_on or date.today(),
+        occurred_on=payload.occurred_on,
         notes=payload.notes,
         source="web",
+        allow_duplicate=True,
     )
-    db.add(row)
-    db.commit()
-    db.refresh(row)
-    return row
-

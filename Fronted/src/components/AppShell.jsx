@@ -1,20 +1,24 @@
 import { createElement } from "react"
 import { NavLink, Outlet, useNavigate } from "react-router-dom"
-import { BarChart3, Bell, Bot, Boxes, CircleDollarSign, FileText, LayoutDashboard, LogOut, ReceiptText, Search, Settings, ShoppingCart, Tags, UserCheck, Users } from "lucide-react"
+import { BarChart3, Bot, Boxes, CircleDollarSign, LayoutDashboard, LogOut, MessageSquareText, Settings } from "lucide-react"
 import { clearSession, getStoredSession } from "../lib/auth"
+import MobileBottomNav from "./MobileBottomNav"
 
 const links = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/expenses", label: "Gastos", icon: ReceiptText },
-  { to: "/sales", label: "Ventas", icon: ShoppingCart },
-  { to: "/workers", label: "Trabajadores", icon: Users },
-  { to: "/inventory", label: "Inventario", icon: Boxes },
-  { to: "/prices", label: "Precios", icon: Tags },
-  { to: "/debts", label: "Deudas", icon: CircleDollarSign },
-  { to: "/revisar-telegram", label: "Revision Telegram", icon: UserCheck },
+  { to: "/", label: "Resumen", icon: LayoutDashboard },
+  { to: "/finanzas", label: "Finanzas", icon: CircleDollarSign },
+  { to: "/productos", label: "Productos", icon: Boxes },
+  { to: "/telegram", label: "Telegram", icon: MessageSquareText },
   { to: "/reports", label: "Reportes", icon: BarChart3 },
-  { to: "/vouchers", label: "Vouchers", icon: FileText },
-  { to: "/settings", label: "Configuracion", icon: Settings },
+  { to: "/configuracion", label: "Configuracion", icon: Settings },
+]
+
+const mobileLinks = [
+  { to: "/", label: "Resumen", icon: LayoutDashboard },
+  { to: "/productos", label: "Productos", icon: Boxes },
+  { to: "/telegram", label: "Telegram", icon: MessageSquareText },
+  { to: "/finanzas", label: "Finanzas", icon: CircleDollarSign },
+  { to: "/configuracion", label: "Mas", icon: Settings },
 ]
 
 export default function AppShell() {
@@ -28,39 +32,31 @@ export default function AppShell() {
   }
 
   return (
-    <div className="min-h-screen p-3 lg:grid lg:grid-cols-[304px_1fr] lg:gap-7 lg:p-6">
-      <aside className="glass-panel sticky top-6 z-20 h-auto rounded-[2.4rem] px-5 py-5 lg:h-[calc(100vh-3rem)]">
+    <div className="min-h-screen bg-slate-50 pb-24 lg:grid lg:grid-cols-[280px_1fr] lg:gap-6 lg:p-5 lg:pb-5">
+      <aside className="hidden border-r border-slate-200 bg-white px-5 py-5 lg:sticky lg:top-0 lg:block lg:h-[calc(100vh-2.5rem)] lg:rounded-3xl lg:border lg:shadow-sm">
         <div className="flex items-center justify-between lg:block">
           <div className="flex items-center gap-3">
-            <div className="flex size-12 items-center justify-center rounded-3xl bg-ink text-white shadow-lg shadow-slate-300/50">
+            <div className="flex size-11 items-center justify-center rounded-2xl bg-slate-900 text-white">
               <Bot size={22} />
             </div>
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-muted">SmartConta AI</p>
-              <h1 className="mt-1 text-xl font-semibold leading-tight text-ink">{company}</h1>
+              <p className="text-xs font-bold uppercase text-blue-600">SmartConta AI</p>
+              <h1 className="mt-1 text-lg font-bold leading-tight text-slate-900">{company}</h1>
             </div>
           </div>
-          <button
-            className="flex items-center gap-2 rounded-2xl border border-white/70 bg-white/50 px-3 py-2 text-sm font-semibold text-muted lg:hidden"
-            onClick={logout}
-            aria-label="Cerrar sesion"
-          >
-            <LogOut size={18} />
-            Cerrar sesion
-          </button>
         </div>
 
-        <nav className="mt-7 flex gap-2 overflow-x-auto lg:flex-col lg:overflow-visible">
+        <nav className="mt-8 flex flex-col gap-1.5">
           {links.map((link) => (
             <NavLink
               key={link.to}
               to={link.to}
               end={link.to === "/"}
               className={({ isActive }) =>
-                `flex min-w-fit items-center gap-3 rounded-2xl px-4 py-3 text-[14px] font-semibold transition duration-200 ${
+                `flex items-center gap-3 rounded-2xl px-4 py-3 text-[14px] font-semibold transition duration-200 ${
                   isActive
-                    ? "bg-ink text-white shadow-lg shadow-slate-300/50"
-                    : "text-ink/70 hover:bg-white/70 hover:text-ink"
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                 }`
               }
             >
@@ -70,39 +66,40 @@ export default function AppShell() {
           ))}
         </nav>
 
-        <div className="mt-8 hidden rounded-[1.8rem] border border-white/70 bg-white/52 p-5 shadow-inner lg:block">
-          <p className="text-xs uppercase tracking-[0.18em] text-muted">Telegram first</p>
-          <p className="mt-3 text-[13px] leading-6 text-muted">
-            Tus trabajadores reportan por chat. La IA normaliza, valida y separa datos por empresa.
+        <div className="mt-8 rounded-2xl border border-blue-100 bg-blue-50 p-4">
+          <p className="text-xs font-bold uppercase text-blue-700">Decision panel</p>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            Revisa ganancias, productos críticos y mensajes pendientes antes de operar.
           </p>
         </div>
 
         <button
           onClick={logout}
-          className="mt-7 hidden w-full items-center justify-center gap-2 rounded-2xl border border-white/70 bg-white/56 px-3 py-3 text-sm font-semibold text-ink/70 transition hover:-translate-y-0.5 hover:bg-white lg:flex"
+          className="mt-7 flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
         >
           <LogOut size={16} />
           Cerrar sesion
         </button>
       </aside>
 
-      <main className="px-2 py-5 sm:px-4 lg:px-3">
-        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <label className="soft-input flex min-h-12 w-full max-w-xl items-center gap-3 rounded-full px-5 text-muted">
-            <Search size={18} />
-            <input className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-muted" placeholder="Buscar ventas, gastos, trabajadores..." />
-          </label>
+      <main className="px-4 py-5 sm:px-6 lg:px-0 lg:py-1">
+        <header className="mb-5 flex items-center justify-between lg:hidden">
           <div className="flex items-center gap-3">
-            <button className="flex size-12 items-center justify-center rounded-full border border-white/80 bg-white/80 text-ink shadow-lg shadow-slate-300/30 transition hover:-translate-y-0.5 hover:bg-brand">
-              <Bell size={18} />
-            </button>
-            <div className="rounded-full bg-brand px-4 py-2 text-sm font-semibold text-ink shadow-lg shadow-lime-200/50">
-              AI listo
+            <div className="flex size-10 items-center justify-center rounded-2xl bg-slate-900 text-white">
+              <Bot size={20} />
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase text-blue-600">SmartConta</p>
+              <p className="text-sm font-semibold text-slate-900">{company}</p>
             </div>
           </div>
-        </div>
+          <button onClick={logout} className="rounded-xl border border-slate-200 bg-white p-2 text-slate-600" aria-label="Cerrar sesion">
+            <LogOut size={18} />
+          </button>
+        </header>
         <Outlet />
       </main>
+      <MobileBottomNav links={mobileLinks} />
     </div>
   )
 }

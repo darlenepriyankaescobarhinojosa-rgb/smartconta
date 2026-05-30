@@ -12,6 +12,9 @@ import Inventory from "./pages/Inventory"
 import Prices from "./pages/Prices"
 import Debts from "./pages/Debts"
 import TelegramReview from "./pages/TelegramReview"
+import Finance from "./pages/Finance"
+import TelegramHub from "./pages/TelegramHub"
+import ConfigurationHub from "./pages/ConfigurationHub"
 import { getStoredSession } from "./lib/auth"
 
 function ProtectedRoute({ children }) {
@@ -35,6 +38,10 @@ export default function App() {
         }
       >
         <Route index element={<Dashboard />} />
+        <Route path="finanzas" element={<Finance />} />
+        <Route path="productos" element={<Inventory />} />
+        <Route path="telegram" element={<TelegramHub />} />
+        <Route path="configuracion" element={<ConfigurationHub />} />
         <Route path="expenses" element={<Expenses />} />
         <Route path="sales" element={<Sales />} />
         <Route path="workers" element={<Workers />} />

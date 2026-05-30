@@ -264,3 +264,20 @@ class TelegramReviewEditRequest(BaseModel):
     amount: float | None = None
     product: str | None = None
     category: str | None = None
+
+
+class VisionReviewItemCorrection(BaseModel):
+    raw_name: str | None = None
+    quantity: float | None = None
+    unit: str | None = None
+    unit_cost: float | None = None
+    line_total: float | None = None
+
+
+class VisionReviewCorrectionRequest(BaseModel):
+    supplier: str | None = None
+    date: str | None = None
+    total_amount: float | None = None
+    currency: str | None = None
+    items: list[VisionReviewItemCorrection] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)

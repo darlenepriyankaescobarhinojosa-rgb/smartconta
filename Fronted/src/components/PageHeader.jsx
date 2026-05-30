@@ -1,10 +1,10 @@
 export default function PageHeader({ eyebrow, title, description, action }) {
   return (
-    <header className="mb-9 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+    <header className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
       <div>
-        {eyebrow && <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-muted">{eyebrow}</p>}
-        <h2 className="mt-3 text-4xl font-semibold leading-[1.02] text-ink md:text-5xl">{title}</h2>
-        {description && <p className="mt-4 max-w-3xl text-[15px] leading-7 text-muted">{description}</p>}
+        {eyebrow && <p className="text-xs font-bold uppercase text-blue-600">{eyebrow}</p>}
+        <h2 className="mt-2 text-3xl font-bold leading-tight text-slate-900 md:text-4xl">{title}</h2>
+        {description && <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">{description}</p>}
       </div>
       {action}
     </header>

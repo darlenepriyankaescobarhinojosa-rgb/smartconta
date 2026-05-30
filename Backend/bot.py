@@ -3,6 +3,7 @@ import asyncio
 import sys
 
 from telegram import Update
+from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 
 sys.path.append(str(Path(__file__).resolve().parent))
@@ -47,7 +48,12 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             TelegramMessage(telegram_user_id=telegram_user_id, text=text),
             db,
         )
-        await update.message.reply_text(result.get("reply", "Mensaje procesado."))
+        reply_markup = (
+            ReplyKeyboardMarkup([["Si", "Corregir"]], one_time_keyboard=True, resize_keyboard=True)
+            if result.get("needs_confirmation")
+            else ReplyKeyboardRemove()
+        )
+        await update.message.reply_text(result.get("reply", "Mensaje procesado."), reply_markup=reply_markup)
     except Exception as exc:
         await update.message.reply_text(
             "No pude registrar el mensaje. Verifica que estes conectado con /start CODIGO.\n"

@@ -1,6 +1,11 @@
+import logging
+
 from sqlalchemy.orm import Session
 
 from app.models import TelegramReviewQueue, TelegramReviewStatus, Worker
+
+
+logger = logging.getLogger(__name__)
 
 
 def enqueue_review_item(db: Session, worker: Worker, raw_text: str, event: dict, decision: dict) -> TelegramReviewQueue:
@@ -15,6 +20,15 @@ def enqueue_review_item(db: Session, worker: Worker, raw_text: str, event: dict,
         .first()
     )
     if existing:
+        logger.info(
+            "review_queue_idempotent_hit",
+            extra={
+                "company_id": worker.company_id,
+                "worker_id": worker.id,
+                "review_item_id": existing.id,
+                "reason": decision.get("reason"),
+            },
+        )
         return existing
 
     item = TelegramReviewQueue(
@@ -28,6 +42,16 @@ def enqueue_review_item(db: Session, worker: Worker, raw_text: str, event: dict,
     db.add(item)
     db.commit()
     db.refresh(item)
+    logger.info(
+        "review_queue_enqueued",
+        extra={
+            "company_id": worker.company_id,
+            "worker_id": worker.id,
+            "review_item_id": item.id,
+            "confidence": item.confidence,
+            "reason": decision.get("reason"),
+        },
+    )
     return item
 
 
