@@ -127,9 +127,23 @@ CREATE TABLE IF NOT EXISTS vouchers (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS telegram_review_queue (
+  id SERIAL PRIMARY KEY,
+  company_id INTEGER NOT NULL REFERENCES companies(id),
+  raw_text TEXT NOT NULL,
+  parsed_json JSONB DEFAULT '{}'::jsonb,
+  decision_json JSONB DEFAULT '{}'::jsonb,
+  confidence DOUBLE PRECISION NOT NULL DEFAULT 0,
+  status VARCHAR(20) NOT NULL DEFAULT 'pending',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  reviewed_at TIMESTAMPTZ,
+  reviewed_by_worker_id INTEGER REFERENCES workers(id)
+);
+
 CREATE INDEX IF NOT EXISTS idx_movements_company_type_date ON movements(company_id, type, occurred_on);
 CREATE INDEX IF NOT EXISTS idx_workers_company_status ON workers(company_id, status);
 CREATE INDEX IF NOT EXISTS idx_vouchers_company_status ON vouchers(company_id, status);
 CREATE INDEX IF NOT EXISTS idx_stock_movements_company_product_date ON stock_movements(company_id, product_id, occurred_on);
 CREATE INDEX IF NOT EXISTS idx_price_history_company_product_date ON product_price_history(company_id, product_id, occurred_on);
 CREATE INDEX IF NOT EXISTS idx_debts_company_status ON debts(company_id, status);
+CREATE INDEX IF NOT EXISTS idx_telegram_review_queue_company_status ON telegram_review_queue(company_id, status);

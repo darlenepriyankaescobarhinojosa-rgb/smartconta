@@ -2,12 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from telegram import Bot
 
-from app.api.deps import get_db
+from app.api.deps import get_current_user, get_db
 from app.core.config import settings
-from app.models import Movement, Voucher, Worker, WorkerStatus
-from app.schemas import TelegramMessage
-from app.services.ai_extractor import extract_business_event
+from app.models import TelegramReviewQueue, TelegramReviewStatus, User, Voucher, Worker, WorkerStatus
+from app.schemas import MovementOut, TelegramMessage, TelegramReviewEditRequest, TelegramReviewQueueOut
 from app.services.ocr import extract_voucher_data
+from app.services.transaction_service import approve_review_item_as_movement, process_telegram_text_movement, reject_review_item
 
 router = APIRouter(prefix="/telegram", tags=["telegram"])
 
@@ -35,6 +35,60 @@ async def telegram_webhook(request: Request, db: Session = Depends(get_db)):
 @router.post("/simulate")
 def simulate_telegram_message(payload: TelegramMessage, db: Session = Depends(get_db)):
     return process_telegram_message(payload, db)
+
+
+@router.get("/review-queue", response_model=list[TelegramReviewQueueOut])
+def list_review_queue(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    return (
+        db.query(TelegramReviewQueue)
+        .filter(
+            TelegramReviewQueue.company_id == user.company_id,
+            TelegramReviewQueue.status == TelegramReviewStatus.pending,
+        )
+        .order_by(TelegramReviewQueue.created_at.desc())
+        .limit(200)
+        .all()
+    )
+
+
+@router.post("/review-queue/{item_id}/approve", response_model=MovementOut)
+def approve_review_queue_item(
+    item_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    item = _review_item(db, user.company_id, item_id)
+    try:
+        return approve_review_item_as_movement(db, item)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/review-queue/{item_id}/reject", response_model=TelegramReviewQueueOut)
+def reject_review_queue_item(
+    item_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    item = _review_item(db, user.company_id, item_id)
+    try:
+        return reject_review_item(db, item)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/review-queue/{item_id}/edit-and-approve", response_model=MovementOut)
+def edit_and_approve_review_queue_item(
+    item_id: int,
+    payload: TelegramReviewEditRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    item = _review_item(db, user.company_id, item_id)
+    try:
+        return approve_review_item_as_movement(db, item, payload.model_dump(exclude_unset=True))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 def process_telegram_message(payload: TelegramMessage, db: Session):
@@ -87,23 +141,20 @@ def process_telegram_message(payload: TelegramMessage, db: Session):
     if not payload.text:
         raise HTTPException(status_code=400, detail="Mensaje vacio")
 
-    event = extract_business_event(payload.text, _company_context(worker))
-    movement = Movement(
-        company_id=worker.company_id,
-        worker_id=worker.id,
-        type=event["type"],
-        amount=event["amount"],
-        quantity=event.get("quantity"),
-        category=event.get("category"),
-        description=event["description"],
-        source="telegram",
-        ai_confidence=event.get("confidence", 0.75),
-        raw_text=payload.text,
-    )
-    db.add(movement)
-    db.commit()
-    db.refresh(movement)
-    return {"reply": f"Registrado: {movement.type.value} por S/ {movement.amount:.2f}", "movement_id": movement.id}
+    result = process_telegram_text_movement(db, worker, payload.text)
+    if result.needs_review or not result.movement:
+        return {
+            "reply": (
+                "No guarde este mensaje porque no detecte un monto total claro. "
+                "Escribe el total con palabras como: pague 120.50 o total 120.50."
+            ),
+            "needs_review": True,
+            "reason": result.reason,
+            "event": result.event,
+        }
+
+    movement = result.movement
+    return {"reply": _movement_reply(movement, result.event), "movement_id": movement.id}
 
 
 def _normalize_telegram_update(update: dict) -> TelegramMessage:
@@ -118,6 +169,17 @@ def _normalize_telegram_update(update: dict) -> TelegramMessage:
     if photos:
         photo_url = photos[-1].get("file_id")
     return TelegramMessage(telegram_user_id=user_id, text=text, photo_url=photo_url, invite_code=invite_code)
+
+
+def _review_item(db: Session, company_id: int, item_id: int) -> TelegramReviewQueue:
+    item = (
+        db.query(TelegramReviewQueue)
+        .filter(TelegramReviewQueue.id == item_id, TelegramReviewQueue.company_id == company_id)
+        .first()
+    )
+    if not item:
+        raise HTTPException(status_code=404, detail="Item de revision no encontrado")
+    return item
 
 
 async def _send_telegram_reply(update: dict, reply: str | None) -> None:
@@ -136,8 +198,11 @@ async def _send_telegram_reply(update: dict, reply: str | None) -> None:
         return
 
 
-def _company_context(worker: Worker) -> dict:
-    return {
-        "business_type": worker.company.business_type.value if worker.company and worker.company.business_type else "other",
-        "enabled_modules": worker.company.enabled_modules if worker.company else [],
-    }
+def _movement_reply(movement, event: dict) -> str:
+    if movement.type.value == "stock":
+        return "Stock actualizado correctamente"
+
+    label = {"expense": "gasto", "sale": "venta"}.get(movement.type.value, movement.type.value)
+    if float(event.get("confidence") or 0) < 0.8:
+        return f"Registrado con duda: {label} S/ {movement.amount:.2f}. Revisa en dashboard."
+    return f"Registrado: {label} S/ {movement.amount:.2f}"

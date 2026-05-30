@@ -8,7 +8,7 @@ from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 class Settings(BaseSettings):
     app_env: str = "local"
-    database_url: str = "postgresql://postgres:Molly@localhost:5433/smartconta"
+    database_url: str = "postgresql://postgres:change-me-local-password@localhost:5433/smartconta"
     jwt_secret_key: str = "change-me-in-production"
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 60 * 12

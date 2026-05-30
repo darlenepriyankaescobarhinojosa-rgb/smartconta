@@ -1,5 +1,6 @@
+import { createElement } from "react"
 import { NavLink, Outlet, useNavigate } from "react-router-dom"
-import { BarChart3, Bell, Bot, Boxes, CircleDollarSign, FileText, LayoutDashboard, LogOut, ReceiptText, Search, Settings, ShoppingCart, Tags, Users } from "lucide-react"
+import { BarChart3, Bell, Bot, Boxes, CircleDollarSign, FileText, LayoutDashboard, LogOut, ReceiptText, Search, Settings, ShoppingCart, Tags, UserCheck, Users } from "lucide-react"
 import { clearSession, getStoredSession } from "../lib/auth"
 
 const links = [
@@ -10,6 +11,7 @@ const links = [
   { to: "/inventory", label: "Inventario", icon: Boxes },
   { to: "/prices", label: "Precios", icon: Tags },
   { to: "/debts", label: "Deudas", icon: CircleDollarSign },
+  { to: "/revisar-telegram", label: "Revision Telegram", icon: UserCheck },
   { to: "/reports", label: "Reportes", icon: BarChart3 },
   { to: "/vouchers", label: "Vouchers", icon: FileText },
   { to: "/settings", label: "Configuracion", icon: Settings },
@@ -49,11 +51,11 @@ export default function AppShell() {
         </div>
 
         <nav className="mt-7 flex gap-2 overflow-x-auto lg:flex-col lg:overflow-visible">
-          {links.map(({ to, label, icon: Icon }) => (
+          {links.map((link) => (
             <NavLink
-              key={to}
-              to={to}
-              end={to === "/"}
+              key={link.to}
+              to={link.to}
+              end={link.to === "/"}
               className={({ isActive }) =>
                 `flex min-w-fit items-center gap-3 rounded-2xl px-4 py-3 text-[14px] font-semibold transition duration-200 ${
                   isActive
@@ -62,8 +64,8 @@ export default function AppShell() {
                 }`
               }
             >
-              <Icon size={18} />
-              {label}
+              {createElement(link.icon, { size: 18 })}
+              {link.label}
             </NavLink>
           ))}
         </nav>

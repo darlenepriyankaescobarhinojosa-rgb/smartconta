@@ -1,10 +1,11 @@
 import { LineChart, Bar, BarChart, CartesianGrid, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 import { useMemo, useState } from "react"
 import { demoSummary, formatMoney } from "../api"
-import { ExplainedChart, prettyTooltip } from "../components/ExplainedChart"
+import { ExplainedChart } from "../components/ExplainedChart"
 import PageHeader from "../components/PageHeader"
 import StatCard from "../components/StatCard"
 import { useApiResource } from "../hooks/useApiResource"
+import { prettyTooltip } from "../lib/chartStyle"
 
 export default function Reports() {
   const { data } = useApiResource("/dashboard/summary", demoSummary)

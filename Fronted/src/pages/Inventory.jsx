@@ -1,5 +1,5 @@
 import { Boxes, Plus, RefreshCcw } from "lucide-react"
-import { useMemo, useState } from "react"
+import { createElement, useMemo, useState } from "react"
 import { api, formatMoney } from "../api"
 import DataTable from "../components/DataTable"
 import PageHeader from "../components/PageHeader"
@@ -130,10 +130,10 @@ export default function Inventory() {
   )
 }
 
-function FormTitle({ icon: Icon, title, text }) {
+function FormTitle({ icon, title, text }) {
   return (
     <div className="mb-5 flex items-center gap-3">
-      <span className="flex size-11 items-center justify-center rounded-2xl bg-brand text-ink"><Icon size={18} /></span>
+      <span className="flex size-11 items-center justify-center rounded-2xl bg-brand text-ink">{createElement(icon, { size: 18 })}</span>
       <div>
         <h3 className="text-2xl font-semibold text-ink">{title}</h3>
         <p className="mt-1 text-sm text-muted">{text}</p>
@@ -150,4 +150,3 @@ function Field({ label, value, onChange, type = "text", required = false }) {
     </label>
   )
 }
-

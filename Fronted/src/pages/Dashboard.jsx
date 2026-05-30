@@ -1,19 +1,21 @@
 import { Bot, HelpCircle, Package, ReceiptText, TrendingDown, TrendingUp, Users } from "lucide-react"
 import { Bar, BarChart, CartesianGrid, Cell, ComposedChart, Line, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
-import { useMemo, useState } from "react"
+import { createElement, useMemo, useState } from "react"
 import { demoSummary, formatMoney } from "../api"
 import DataTable from "../components/DataTable"
-import { ExplainedChart, prettyTooltip } from "../components/ExplainedChart"
+import { ExplainedChart } from "../components/ExplainedChart"
 import PageHeader from "../components/PageHeader"
 import StatCard from "../components/StatCard"
 import StatusBadge from "../components/StatusBadge"
 import { useApiResource } from "../hooks/useApiResource"
+import { prettyTooltip } from "../lib/chartStyle"
 
 export default function Dashboard() {
   const { data, loading, error } = useApiResource("/dashboard/summary", demoSummary)
   const [mainView, setMainView] = useState("month")
-  const monthlySeries = (data.monthly_series || []).map((item) => ({ ...item, month: formatMonthLabel(item.month) }))
-  const mainSeries = mainView === "month" ? monthlySeries : data.daily_series || []
+  const monthlySeries = useMemo(() => (data.monthly_series || []).map((item) => ({ ...item, month: formatMonthLabel(item.month) })), [data.monthly_series])
+  const dailySeries = useMemo(() => data.daily_series || [], [data.daily_series])
+  const mainSeries = useMemo(() => mainView === "month" ? monthlySeries : dailySeries, [dailySeries, mainView, monthlySeries])
   const axisKey = mainView === "month" ? "month" : "day"
   const mainTotals = useMemo(() => {
     const revenue = mainSeries.reduce((sum, item) => sum + Number(item.revenue || 0), 0)
@@ -219,11 +221,11 @@ function MiniMetric({ label, value, color }) {
   )
 }
 
-function Alert({ icon: Icon, title, text }) {
+function Alert({ icon, title, text }) {
   return (
     <div className="flex gap-3 rounded-2xl border border-white/80 bg-white/64 p-3.5 shadow-sm transition hover:-translate-y-0.5 hover:bg-white">
       <span className="flex size-10 items-center justify-center rounded-2xl bg-brand text-ink">
-        <Icon size={17} />
+        {createElement(icon, { size: 17 })}
       </span>
       <div>
         <p className="text-sm font-semibold text-ink">{title}</p>

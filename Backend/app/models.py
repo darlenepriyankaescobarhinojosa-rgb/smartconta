@@ -30,6 +30,13 @@ class VoucherStatus(str, enum.Enum):
     rejected = "rejected"
 
 
+class TelegramReviewStatus(str, enum.Enum):
+    pending = "pending"
+    approved = "approved"
+    rejected = "rejected"
+    corrected = "corrected"
+
+
 class BusinessType(str, enum.Enum):
     food_production = "food_production"
     retail = "retail"
@@ -226,3 +233,18 @@ class Voucher(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     movement: Mapped["Movement"] = relationship(back_populates="voucher")
+
+
+class TelegramReviewQueue(Base):
+    __tablename__ = "telegram_review_queue"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    company_id: Mapped[int] = mapped_column(ForeignKey("companies.id"), index=True, nullable=False)
+    raw_text: Mapped[str] = mapped_column(Text, nullable=False)
+    parsed_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    decision_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    confidence: Mapped[float] = mapped_column(Float, default=0)
+    status: Mapped[TelegramReviewStatus] = mapped_column(Enum(TelegramReviewStatus), default=TelegramReviewStatus.pending)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    reviewed_by_worker_id: Mapped[int | None] = mapped_column(ForeignKey("workers.id"), index=True)

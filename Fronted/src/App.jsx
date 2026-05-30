@@ -11,6 +11,7 @@ import Settings from "./pages/Settings"
 import Inventory from "./pages/Inventory"
 import Prices from "./pages/Prices"
 import Debts from "./pages/Debts"
+import TelegramReview from "./pages/TelegramReview"
 import { getStoredSession } from "./lib/auth"
 
 function ProtectedRoute({ children }) {
@@ -42,6 +43,7 @@ export default function App() {
         <Route path="inventory" element={<Inventory />} />
         <Route path="prices" element={<Prices />} />
         <Route path="debts" element={<Debts />} />
+        <Route path="revisar-telegram" element={<TelegramReview />} />
         <Route path="settings" element={<Settings />} />
       </Route>
     </Routes>

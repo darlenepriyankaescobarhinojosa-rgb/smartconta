@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from pydantic import BaseModel, EmailStr, Field
 
-from app.models import BusinessType, DebtStatus, DebtType, MovementType, StockMovementType, UserRole, VoucherStatus, WorkerStatus
+from app.models import BusinessType, DebtStatus, DebtType, MovementType, StockMovementType, TelegramReviewStatus, UserRole, VoucherStatus, WorkerStatus
 
 
 DEFAULT_MODULES = ["sales", "expenses", "inventory", "vouchers"]
@@ -242,3 +242,25 @@ class TelegramMessage(BaseModel):
     text: str | None = None
     photo_url: str | None = None
     invite_code: str | None = None
+
+
+class TelegramReviewQueueOut(BaseModel):
+    id: int
+    company_id: int
+    raw_text: str
+    parsed_json: dict
+    decision_json: dict
+    confidence: float
+    status: TelegramReviewStatus
+    created_at: datetime
+    reviewed_at: datetime | None = None
+    reviewed_by_worker_id: int | None = None
+
+    class Config:
+        from_attributes = True
+
+
+class TelegramReviewEditRequest(BaseModel):
+    amount: float | None = None
+    product: str | None = None
+    category: str | None = None
