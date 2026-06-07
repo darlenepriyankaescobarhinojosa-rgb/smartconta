@@ -20,6 +20,7 @@ export default function Inventory() {
   const [productForm, setProductForm] = useState({ name: "", category: "", unit: "unidad", cost: 0, price: 0, stock: 0, min_stock: 0 })
   const [stockForm, setStockForm] = useState({ product_id: "", type: "adjustment", quantity: 0, new_stock: "", reason: "" })
   const [priceForm, setPriceForm] = useState({ product_id: "", cost: 0, price: 0, notes: "" })
+  const [reviewProduct, setReviewProduct] = useState(null)
   const [message, setMessage] = useState("")
 
   const productMap = useMemo(() => Object.fromEntries(products.data.map((item) => [item.id, item.name])), [products.data])
@@ -93,6 +94,33 @@ export default function Inventory() {
     prices.reload()
   }
 
+  function openProductReview(product) {
+    setReviewProduct(product)
+  }
+
+  function prepareProductForStock(product) {
+    setStockForm({
+      product_id: String(product.id),
+      type: "adjustment",
+      quantity: Number(product.stock || 0),
+      new_stock: product.stock ?? "",
+      reason: `Revisar ${product.name}`,
+    })
+    setReviewProduct(null)
+    document.getElementById("stock-form")?.scrollIntoView({ behavior: "smooth", block: "start" })
+  }
+
+  function prepareProductForPrice(product) {
+    setPriceForm({
+      product_id: String(product.id),
+      cost: Number(product.cost || 0),
+      price: Number(product.price || 0),
+      notes: `Revisar ${product.name}`,
+    })
+    setReviewProduct(null)
+    document.getElementById("price-form")?.scrollIntoView({ behavior: "smooth", block: "start" })
+  }
+
   return (
     <>
       <SectionHeader
@@ -136,7 +164,7 @@ export default function Inventory() {
         {products.loading ? (
           <LoadingSkeleton rows={4} />
         ) : filteredProducts.length ? (
-          filteredProducts.map((product) => <ProductCard key={product.id} product={product} priceHistory={prices.data} movements={movements.data} />)
+          filteredProducts.map((product) => <ProductCard key={product.id} product={product} priceHistory={prices.data} movements={movements.data} onReview={openProductReview} />)
         ) : (
           <EmptyState title="No hay productos para este filtro" description="Cambia el filtro o registra productos para ver alertas de rentabilidad e inventario." />
         )}
@@ -177,7 +205,7 @@ export default function Inventory() {
           <button className="pastel-button mt-4 rounded-xl px-4 py-3 text-sm font-bold">Guardar</button>
         </form>
 
-        <form onSubmit={createStockMovement} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <form id="stock-form" onSubmit={createStockMovement} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <FormTitle icon={RefreshCcw} title="Actualizar stock" />
           <ProductSelect products={products.data} value={stockForm.product_id} onChange={(value) => setStockForm({ ...stockForm, product_id: value })} />
           <div className="mt-3 grid grid-cols-2 gap-3">
@@ -188,7 +216,7 @@ export default function Inventory() {
           <button className="pastel-button mt-4 rounded-xl px-4 py-3 text-sm font-bold">Actualizar</button>
         </form>
 
-        <form onSubmit={updatePrice} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <form id="price-form" onSubmit={updatePrice} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <FormTitle icon={Tags} title="Actualizar precio" />
           <ProductSelect products={products.data} value={priceForm.product_id} onChange={(value) => setPriceForm({ ...priceForm, product_id: value })} />
           <div className="mt-3 grid grid-cols-2 gap-3">
@@ -214,6 +242,34 @@ export default function Inventory() {
           rows={movements.data}
         />
       </section>
+
+      {reviewProduct && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/45 p-4 lg:items-center">
+          <div className="w-full max-w-2xl rounded-3xl bg-white p-5 shadow-2xl">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-600">Revisar producto</p>
+                <h3 className="mt-1 text-xl font-bold text-slate-900">{reviewProduct.name}</h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  {reviewProduct.category || "Sin categoria"} · {reviewProduct.unit}
+                </p>
+              </div>
+              <button type="button" onClick={() => setReviewProduct(null)} className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600">
+                Cerrar
+              </button>
+            </div>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <button type="button" onClick={() => prepareProductForStock(reviewProduct)} className="rounded-2xl bg-blue-600 px-4 py-3 text-sm font-bold text-white">
+                Revisar stock
+              </button>
+              <button type="button" onClick={() => prepareProductForPrice(reviewProduct)} className="rounded-2xl bg-slate-900 px-4 py-3 text-sm font-bold text-white">
+                Revisar precio
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

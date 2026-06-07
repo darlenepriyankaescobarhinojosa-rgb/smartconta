@@ -2,6 +2,8 @@ import { Link } from "react-router-dom"
 import { createElement } from "react"
 import { AlertTriangle, CheckCircle2, MessageSquareText, Percent, Send, UserCheck, Users, XCircle } from "lucide-react"
 import AlertCard from "../components/AlertCard"
+import EmptyState from "../components/EmptyState"
+import LoadingSkeleton from "../components/LoadingSkeleton"
 import SectionHeader from "../components/SectionHeader"
 import SummaryCard from "../components/SummaryCard"
 import { useApiResource } from "../hooks/useApiResource"
@@ -19,6 +21,8 @@ export default function TelegramHub() {
     ? Math.round((visionItems.reduce((sum, item) => sum + visionConfidence(item), 0) / visionItems.length) * 100)
     : 0
   const attention = visionAttention(visionItems)
+  const loading = queue.loading || vouchers.loading || workers.loading
+  const emptyWorkspace = !loading && queue.data.length === 0 && vouchers.data.length === 0 && workers.data.length === 0
 
   return (
     <>
@@ -27,32 +31,45 @@ export default function TelegramHub() {
         title="Mensajes operativos del negocio"
         description="Revisa lo que la IA no pudo guardar con seguridad y administra trabajadores conectados."
       />
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <SummaryCard icon={UserCheck} label="Vouchers pendientes" value={pendingVouchers} helper="Comprobantes por revisar" tone={pendingVouchers ? "pending" : "success"} />
-        <SummaryCard icon={CheckCircle2} label="Vouchers aprobados" value={approvedVouchers} helper="Validados" tone="success" />
-        <SummaryCard icon={XCircle} label="Vouchers rechazados" value={rejectedVouchers} helper="Descartados" tone={rejectedVouchers ? "danger" : "info"} />
-        <SummaryCard icon={Percent} label="Confianza promedio" value={`${averageConfidence}%`} helper="Propuestas Vision pendientes" tone={averageConfidence >= 80 ? "success" : averageConfidence >= 70 ? "warning" : "danger"} />
-      </section>
-      <section className="mt-4 grid gap-4 md:grid-cols-3">
-        <SummaryCard icon={MessageSquareText} label="Mensajes pendientes" value={queue.data.length} helper="Todos los tipos de revisión" tone={queue.data.length ? "pending" : "success"} />
-        <SummaryCard icon={Users} label="Trabajadores activos" value={activeWorkers} helper={`${workers.data.length} registrados`} tone="info" />
-        <SummaryCard icon={MessageSquareText} label="Canal" value="Telegram" helper="Entrada principal de datos" tone="info" />
-      </section>
-      <section className="mt-6">
-        <AlertCard
-          title="Necesita atención"
-          text={attention.length ? attention.join(" · ") : "No hay comprobantes Vision con señales críticas en este momento."}
-          icon={AlertTriangle}
-          tone={attention.length ? "warning" : "success"}
-        />
-      </section>
-      <section className="mt-6 grid gap-4 lg:grid-cols-2">
-        <ModuleLink to="/revisar-telegram" title="Revisión Telegram" text="Revisar comprobantes Vision y mensajes ambiguos antes de registrar cualquier dato." icon={UserCheck} />
-        <ModuleLink to="/workers" title="Trabajadores" text="Crear invitaciones, reiniciar conexión y desactivar usuarios operativos." icon={Send} />
-      </section>
-      <section className="mt-6">
-        <AlertCard title="Regla de seguridad" text="Los mensajes dudosos no se registran automáticamente. Pasan por confirmación o revisión humana." icon={MessageSquareText} tone="pending" />
-      </section>
+      {loading ? (
+        <div className="grid gap-4">
+          <LoadingSkeleton rows={4} />
+          <LoadingSkeleton rows={3} />
+        </div>
+      ) : (
+        <>
+          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <SummaryCard icon={UserCheck} label="Vouchers pendientes" value={pendingVouchers} helper="Comprobantes por revisar" tone={pendingVouchers ? "pending" : "success"} />
+            <SummaryCard icon={CheckCircle2} label="Vouchers aprobados" value={approvedVouchers} helper="Validados" tone="success" />
+            <SummaryCard icon={XCircle} label="Vouchers rechazados" value={rejectedVouchers} helper="Descartados" tone={rejectedVouchers ? "danger" : "info"} />
+            <SummaryCard icon={Percent} label="Confianza promedio" value={`${averageConfidence}%`} helper="Propuestas Vision pendientes" tone={averageConfidence >= 80 ? "success" : averageConfidence >= 70 ? "warning" : "danger"} />
+          </section>
+          <section className="mt-4 grid gap-4 md:grid-cols-3">
+            <SummaryCard icon={MessageSquareText} label="Mensajes pendientes" value={queue.data.length} helper="Todos los tipos de revisión" tone={queue.data.length ? "pending" : "success"} />
+            <SummaryCard icon={Users} label="Trabajadores activos" value={activeWorkers} helper={`${workers.data.length} registrados`} tone="info" />
+            <SummaryCard icon={MessageSquareText} label="Canal" value="Telegram" helper="Entrada principal de datos" tone="info" />
+          </section>
+          <section className="mt-6">
+            {emptyWorkspace ? (
+              <EmptyState title="No hay actividad Telegram todavía." description="Cuando lleguen vouchers, mensajes o trabajadores conectados, aparecerán aquí sus indicadores." />
+            ) : (
+              <AlertCard
+                title="Necesita atención"
+                text={attention.length ? attention.join(" · ") : "No hay comprobantes Vision con señales críticas en este momento."}
+                icon={AlertTriangle}
+                tone={attention.length ? "warning" : "success"}
+              />
+            )}
+          </section>
+          <section className="mt-6 grid gap-4 lg:grid-cols-2">
+            <ModuleLink to="/revisar-telegram" title="Revisión Telegram" text="Revisar comprobantes Vision y mensajes ambiguos antes de registrar cualquier dato." icon={UserCheck} />
+            <ModuleLink to="/workers" title="Trabajadores" text="Crear invitaciones, reiniciar conexión y desactivar usuarios operativos." icon={Send} />
+          </section>
+          <section className="mt-6">
+            <AlertCard title="Regla de seguridad" text="Los mensajes dudosos no se registran automáticamente. Pasan por confirmación o revisión humana." icon={MessageSquareText} tone="pending" />
+          </section>
+        </>
+      )}
     </>
   )
 }

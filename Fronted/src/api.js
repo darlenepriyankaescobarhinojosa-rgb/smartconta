@@ -43,17 +43,3 @@ export function downloadCsv(filename, rows) {
   link.click()
   URL.revokeObjectURL(url)
 }
-
-export const demoSummary = {
-  revenue: 0,
-  expenses: 0,
-  profit: 0,
-  active_workers: 0,
-  vouchers_pending: 0,
-  stock_units: 0,
-  monthly_series: [],
-  daily_series: [],
-  categories: [],
-  material_costs: [],
-  recent_movements: [],
-}

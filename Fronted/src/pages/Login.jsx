@@ -25,11 +25,11 @@ export default function Login() {
   const navigate = useNavigate()
   const [mode, setMode] = useState("login")
   const [form, setForm] = useState({
-    company_name: "Quesos Marlene",
-    industry: "Alimentos",
-    name: "Marlene Admin",
-    email: "admin@smartconta.pe",
-    password: "smartconta123",
+    company_name: "",
+    industry: "",
+    name: "",
+    email: "",
+    password: "",
     business_type: "food_production",
     enabled_modules: ["sales", "expenses", "inventory", "production", "vouchers"],
   })

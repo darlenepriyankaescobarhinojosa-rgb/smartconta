@@ -32,7 +32,7 @@ export default function AppShell() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-24 lg:grid lg:grid-cols-[280px_1fr] lg:gap-6 lg:p-5 lg:pb-5">
+    <div className="min-h-screen bg-slate-50 pb-[calc(7rem+env(safe-area-inset-bottom))] lg:grid lg:grid-cols-[280px_1fr] lg:gap-6 lg:p-5 lg:pb-5">
       <aside className="hidden border-r border-slate-200 bg-white px-5 py-5 lg:sticky lg:top-0 lg:block lg:h-[calc(100vh-2.5rem)] lg:rounded-3xl lg:border lg:shadow-sm">
         <div className="flex items-center justify-between lg:block">
           <div className="flex items-center gap-3">
@@ -75,7 +75,7 @@ export default function AppShell() {
 
         <button
           onClick={logout}
-          className="mt-7 flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+          className="mt-7 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
         >
           <LogOut size={16} />
           Cerrar sesion
@@ -93,7 +93,7 @@ export default function AppShell() {
               <p className="text-sm font-semibold text-slate-900">{company}</p>
             </div>
           </div>
-          <button onClick={logout} className="rounded-xl border border-slate-200 bg-white p-2 text-slate-600" aria-label="Cerrar sesion">
+          <button onClick={logout} className="flex size-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600" aria-label="Cerrar sesion">
             <LogOut size={18} />
           </button>
         </header>

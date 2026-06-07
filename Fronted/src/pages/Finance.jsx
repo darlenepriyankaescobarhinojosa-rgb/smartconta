@@ -1,14 +1,30 @@
 import { Link } from "react-router-dom"
 import { createElement } from "react"
 import { CircleDollarSign, ReceiptText, ShoppingCart } from "lucide-react"
-import { demoSummary, formatMoney } from "../api"
+import { formatMoney } from "../api"
 import AlertCard from "../components/AlertCard"
+import EmptyState from "../components/EmptyState"
+import LoadingSkeleton from "../components/LoadingSkeleton"
 import SectionHeader from "../components/SectionHeader"
 import SummaryCard from "../components/SummaryCard"
 import { useApiResource } from "../hooks/useApiResource"
 
+const emptySummary = {
+  revenue: 0,
+  expenses: 0,
+  profit: 0,
+  active_workers: 0,
+  vouchers_pending: 0,
+  stock_units: 0,
+  monthly_series: [],
+  daily_series: [],
+  categories: [],
+  recent_movements: [],
+}
+
 export default function Finance() {
-  const { data } = useApiResource("/dashboard/summary", demoSummary)
+  const { data, loading } = useApiResource("/dashboard/summary", emptySummary)
+  const isQuietWorkspace = !loading && data.revenue === 0 && data.expenses === 0 && data.profit === 0
 
   return (
     <>
@@ -17,19 +33,36 @@ export default function Finance() {
         title="Dinero que entra, sale y queda"
         description="Accede rápido a ventas, gastos y deudas sin perder el foco en caja."
       />
-      <section className="grid gap-4 md:grid-cols-3">
-        <SummaryCard icon={ShoppingCart} label="Ventas" value={formatMoney(data.revenue)} helper="Ingresos acumulados" tone="success" />
-        <SummaryCard icon={ReceiptText} label="Gastos" value={formatMoney(data.expenses)} helper="Egresos acumulados" tone="warning" />
-        <SummaryCard icon={CircleDollarSign} label="Ganancia" value={formatMoney(data.profit)} helper="Ventas menos gastos" tone={data.profit >= 0 ? "info" : "danger"} />
-      </section>
-      <section className="mt-6 grid gap-4 lg:grid-cols-3">
-        <ModuleLink to="/sales" title="Ventas" text="Revisa ingresos, unidades vendidas y origen de cada venta." icon={ShoppingCart} />
-        <ModuleLink to="/expenses" title="Gastos" text="Filtra gastos, exporta CSV y revisa categorías." icon={ReceiptText} />
-        <ModuleLink to="/debts" title="Deudas" text="Controla cuentas por cobrar, pagar y pagos parciales." icon={CircleDollarSign} />
-      </section>
-      <section className="mt-6">
-        <AlertCard title="Prioridad financiera" text="Primero revisa deudas pendientes y gastos grandes. Luego compara ventas contra gastos por periodo." icon={CircleDollarSign} tone="info" />
-      </section>
+      {loading ? (
+        <div className="grid gap-4">
+          <LoadingSkeleton rows={3} />
+          <LoadingSkeleton rows={3} />
+        </div>
+      ) : (
+        <>
+          <section className="grid gap-4 md:grid-cols-3">
+            <SummaryCard icon={ShoppingCart} label="Ventas" value={formatMoney(data.revenue)} helper="Ingresos acumulados" tone="success" />
+            <SummaryCard icon={ReceiptText} label="Gastos" value={formatMoney(data.expenses)} helper="Egresos acumulados" tone="warning" />
+            <SummaryCard icon={CircleDollarSign} label="Ganancia" value={formatMoney(data.profit)} helper="Ventas menos gastos" tone={data.profit >= 0 ? "info" : "danger"} />
+          </section>
+
+          {isQuietWorkspace && (
+            <section className="mt-6">
+              <EmptyState title="Todavía no hay actividad financiera registrada." description="Cuando existan ventas, gastos o deudas, esta vista mostrará el resumen operativo del negocio." />
+            </section>
+          )}
+
+          <section className="mt-6 grid gap-4 lg:grid-cols-3">
+            <ModuleLink to="/sales" title="Ventas" text="Revisa ingresos, unidades vendidas y origen de cada venta." icon={ShoppingCart} />
+            <ModuleLink to="/expenses" title="Gastos" text="Filtra gastos, exporta CSV y revisa categorías." icon={ReceiptText} />
+            <ModuleLink to="/debts" title="Deudas" text="Controla cuentas por cobrar, pagar y pagos parciales." icon={CircleDollarSign} />
+          </section>
+
+          <section className="mt-6">
+            <AlertCard title="Prioridad financiera" text="Primero revisa deudas pendientes y gastos grandes. Luego compara ventas contra gastos por periodo." icon={CircleDollarSign} tone="info" />
+          </section>
+        </>
+      )}
     </>
   )
 }
